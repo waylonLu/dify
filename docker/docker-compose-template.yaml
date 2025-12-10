@@ -153,6 +153,8 @@ services:
                -c 'idle_in_transaction_session_timeout=${POSTGRES_IDLE_IN_TRANSACTION_SESSION_TIMEOUT:-0}'
     volumes:
       - ./volumes/db/data:/var/lib/postgresql/data
+    ports:
+      - "${EXPOSE_POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test:
         [
@@ -209,6 +211,8 @@ services:
       # Mount the redis data directory to the container.
       - ./volumes/redis/data:/data
     # Set the redis password when startup redis server.
+    ports:
+      - "${EXPOSE_REDIS_PORT:-6379}:6379"
     command: redis-server --requirepass ${REDIS_PASSWORD:-difyai123456}
     healthcheck:
       test:
@@ -412,6 +416,9 @@ services:
     volumes:
       # Mount the Weaviate data directory to the con tainer.
       - ./volumes/weaviate:/var/lib/weaviate
+    ports:
+      - "${EXPOSE_WEAVIATE_PORT:-8080}:8080"
+      - "${EXPOSE_WEAVIATE_GRPC_PORT:-50051}:50051"
     environment:
       # The Weaviate configurations
       # You can refer to the [Weaviate](https://weaviate.io/developers/weaviate/config-refs/env-vars) documentation for more information.
@@ -701,42 +708,7 @@ services:
     networks:
       - milvus
 
-  # Opensearch vector database
-  opensearch:
-    container_name: opensearch
-    image: opensearchproject/opensearch:latest
-    profiles:
-      - opensearch
-    environment:
-      discovery.type: ${OPENSEARCH_DISCOVERY_TYPE:-single-node}
-      bootstrap.memory_lock: ${OPENSEARCH_BOOTSTRAP_MEMORY_LOCK:-true}
-      OPENSEARCH_JAVA_OPTS: -Xms${OPENSEARCH_JAVA_OPTS_MIN:-512m} -Xmx${OPENSEARCH_JAVA_OPTS_MAX:-1024m}
-      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-Qazwsxedc!@#123}
-    ulimits:
-      memlock:
-        soft: ${OPENSEARCH_MEMLOCK_SOFT:--1}
-        hard: ${OPENSEARCH_MEMLOCK_HARD:--1}
-      nofile:
-        soft: ${OPENSEARCH_NOFILE_SOFT:-65536}
-        hard: ${OPENSEARCH_NOFILE_HARD:-65536}
-    volumes:
-      - ./volumes/opensearch/data:/usr/share/opensearch/data
-    networks:
-      - opensearch-net
 
-  opensearch-dashboards:
-    container_name: opensearch-dashboards
-    image: opensearchproject/opensearch-dashboards:latest
-    profiles:
-      - opensearch
-    environment:
-      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
-    volumes:
-      - ./volumes/opensearch/opensearch_dashboards.yml:/usr/share/opensearch-dashboards/config/opensearch_dashboards.yml
-    networks:
-      - opensearch-net
-    depends_on:
-      - opensearch
 
   # opengauss vector database.
   opengauss:
@@ -868,9 +840,6 @@ networks:
     internal: true
   milvus:
     driver: bridge
-  opensearch-net:
-    driver: bridge
-    internal: true
 
 volumes:
   oradata:
